@@ -85,9 +85,10 @@ function spanish_form_general( $atts ){
     echo '</p>';
     echo '<p>';
     echo 'Email<br />';
-
+    echo '</p>';
+    echo '<p>';
     form_values($pull_form_atts['form']);
-
+    echo '</p>';
     echo '<input type="email" name="email" value="" size="35" />';
     echo '<p><input type="submit" name="cf-submitted" value="Send"></p>';
     echo '</p>';
@@ -153,6 +154,6 @@ function run_spanish_club_forms() {
 	$plugin->run();
 
 	//Adds form 1 shortcode
-	add_shortcode( 'sc_form1', 'spanish_classes_form' );
+	add_shortcode( 'sc_form', 'spanish_form_general' );
 }
 run_spanish_club_forms();
