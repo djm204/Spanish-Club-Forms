@@ -58,9 +58,14 @@ register_deactivation_hook( __FILE__, 'deactivate_spanish_club_forms' );
 require plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms.php';
 
 /**
-* Code for form 1
+* Code for shared form components
 */
-function spanish_classes_form( $atts ){
+function spanish_form_general( $atts ){
+
+    $pull_form_atts = shortcode_atts( array(
+        'form' => 'Please provide a form number'
+    ), $atts );
+
 	echo '<form action="' . esc_url( $_SERVER['REQUEST_URI'] ) . '" method="post">';
 	echo '<p>';
     echo 'Name<br />';
@@ -80,9 +85,30 @@ function spanish_classes_form( $atts ){
     echo '</p>';
     echo '<p>';
     echo 'Email<br />';
+
+    form_values($pull_form_atts['form']);
+
     echo '<input type="email" name="email" value="" size="35" />';
+    echo '<p><input type="submit" name="cf-submitted" value="Send"></p>';
     echo '</p>';
+
     echo '</form>';
+}
+
+function form_values($form_number)
+{
+    switch($form_number)
+    {
+        case '1':
+            echo "form 1";
+            break;
+        case '2':
+            echo "form 2";
+            break;
+        case '3':
+            echo "form 3";
+            break;
+    }
 }
 
 function deliver_mail() {
