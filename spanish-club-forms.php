@@ -27,7 +27,7 @@
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 
 /**
@@ -35,8 +35,8 @@ if ( ! defined( 'WPINC' ) ) {
  * This action is documented in includes/class-spanish-club-forms-activator.php
  */
 function activate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
-	Spanish_Club_Forms_Activator::activate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
+    Spanish_Club_Forms_Activator::activate();
 }
 
 /**
@@ -44,8 +44,8 @@ function activate_spanish_club_forms() {
  * This action is documented in includes/class-spanish-club-forms-deactivator.php
  */
 function deactivate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
-	Spanish_Club_Forms_Deactivator::deactivate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
+    Spanish_Club_Forms_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_spanish_club_forms' );
@@ -61,37 +61,41 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms.php';
 * Code for shared form components
 */
 function spanish_form_general( $atts ){
+    if(isset($POST_['sc_name']) && $POST_['sc_name'] != '')
+    {
+
+    }
 
     $pull_form_atts = shortcode_atts( array(
         'form' => 'Please provide a form number'
     ), $atts );
 
-	echo '<form action="' . esc_url( $_SERVER['REQUEST_URI'] ) . '" method="post">';
-	echo '<p>';
+    echo '<form action="" method="post">';
+    echo '<p>';
     echo 'Name<br />';
-    echo '<input type="text" name="name" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
+    echo '<input type="text" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
     echo '</p>';
     echo '<p>';
     echo 'Mailing Address<br />';
-    echo '<input type="text" name="mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
+    echo '<input type="text" name="sc_mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
     echo '</p>';
     echo '<p>';
     echo 'Postal Code<br />';
-    echo '<input type="text" name="postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
+    echo '<input type="text" name="sc_postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
     echo '</p>';
     echo '<p>';
     echo 'Phone Number<br />';
-    echo '<input type="tel" name="ph_number" value="" size="35" />';
+    echo '<input type="tel" name="sc_ph_number" value="" size="35" />';
     echo '</p>';
     echo '<p>';
     echo 'Email<br />';
+    echo '<input type="email" name="email" value="" size="35" />';
     echo '</p>';
     echo '<p>';
-    form_values($pull_form_atts['form']);
+    echo 'Payment<br />';
+    echo ''.form_values($pull_form_atts['form']);
     echo '</p>';
-    echo '<input type="email" name="email" value="" size="35" />';
     echo '<p><input type="submit" name="cf-submitted" value="Send"></p>';
-    echo '</p>';
 
     echo '</form>';
 }
@@ -101,13 +105,17 @@ function form_values($form_number)
     switch($form_number)
     {
         case '1':
-            echo "form 1";
+            echo '<div><p>$'.esc_attr( get_option('spanish_lesson_price') ).'</p></div>'.
+                '<input type="hidden" name="cmd" value="_s-xclick">
+                <input type="hidden" name="hosted_button_id" value="LXZYPZRGEZM26">
+                <input type="image" src="https://www.sandbox.paypal.com/en_US/i/btn/btn_buynowCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+                <img alt="" border="0" src="https://www.sandbox.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">';
             break;
         case '2':
-            echo "form 2";
+            echo "<div><p>$9.99</p></div>";
             break;
         case '3':
-            echo "form 3";
+            echo "<div><p>$39.99</p></div>";
             break;
     }
 }
@@ -150,10 +158,42 @@ function deliver_mail() {
  */
 function run_spanish_club_forms() {
 
-	$plugin = new Spanish_Club_Forms();
-	$plugin->run();
+    $plugin = new Spanish_Club_Forms();
+    $plugin->run();
 
-	//Adds form 1 shortcode
-	add_shortcode( 'sc_form', 'spanish_form_general' );
+    //Adds form 1 shortcode
+    add_shortcode( 'sc_form', 'spanish_form_general' );
+
+    add_action( 'admin_menu', 'spanish_club_forms_admin_menu' );
+
+    //call register settings function
+    add_action( 'admin_init', 'spanish_form_plugin_settings' );
 }
+
+
+function spanish_form_plugin_settings() {
+    //register our settings
+    register_setting( 'spanish-form-settings-group', 'spanish_lesson_price' );
+    register_setting( 'spanish-form-settings-group', 'dance_lesson_price' );
+    register_setting( 'spanish-form-settings-group', 'membership_price' );
+    register_setting( 'spanish-form-settings-group', 'paypal_api_key' );
+    register_setting( 'spanish-form-settings-group', 'stripe_api_key' );
+}
+
+
+function spanish_club_forms_admin_menu() {
+    add_menu_page(
+        'Spanish Club Forms',
+        'Spanish Club Forms',
+        'manage_options',
+        'spanish-club-forms',
+        'wp_options_page'
+    );
+}
+
+function wp_options_page() {
+    include 'admin/partials/spanish-club-forms-admin-display.php';
+}
+
+
 run_spanish_club_forms();
