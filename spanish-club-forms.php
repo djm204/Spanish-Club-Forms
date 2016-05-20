@@ -27,7 +27,7 @@
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-    die;
+	die;
 }
 
 /**
@@ -35,8 +35,8 @@ if ( ! defined( 'WPINC' ) ) {
  * This action is documented in includes/class-spanish-club-forms-activator.php
  */
 function activate_spanish_club_forms() {
-    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
-    Spanish_Club_Forms_Activator::activate();
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
+	Spanish_Club_Forms_Activator::activate();
 }
 
 /**
@@ -44,8 +44,8 @@ function activate_spanish_club_forms() {
  * This action is documented in includes/class-spanish-club-forms-deactivator.php
  */
 function deactivate_spanish_club_forms() {
-    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
-    Spanish_Club_Forms_Deactivator::deactivate();
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
+	Spanish_Club_Forms_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_spanish_club_forms' );
@@ -61,43 +61,238 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms.php';
 * Code for shared form components
 */
 function spanish_form_general( $atts ){
-    if(isset($POST_['sc_name']) && $POST_['sc_name'] != '')
-    {
+    ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+    include 'form-validations.php';
+    $form_errors = 'Null';
+    $form_errors_display = '';
 
+    if(isset($_POST['sc_name']) || isset($_GET['paypal']))
+    {
+        $form_errors = spanish_form_validation();
+        $form_errors_display = $form_errors;
     }
+
+    if(((isset($_GET['paypal']) && $_GET['paypal']=='checkout') && $form_errors == '' )|| 
+        (isset($_GET['token']) && $_GET['token']!=''&& isset($_GET['PayerID']) && $_GET['PayerID']!='')
+        )
+    {
+        include 'paypal/process.php';
+        if((isset($_GET['token'])))
+        {
+            $form_errors_display = '';
+        }
+    }
+    else
+    {
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . "form_payment_record";
 
     $pull_form_atts = shortcode_atts( array(
         'form' => 'Please provide a form number'
     ), $atts );
 
-    echo '<form action="" method="post">';
-    echo '<p>';
-    echo 'Name<br />';
-    echo '<input type="text" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
-    echo '</p>';
-    echo '<p>';
-    echo 'Mailing Address<br />';
-    echo '<input type="text" name="sc_mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
-    echo '</p>';
-    echo '<p>';
-    echo 'Postal Code<br />';
-    echo '<input type="text" name="sc_postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" />';
-    echo '</p>';
-    echo '<p>';
-    echo 'Phone Number<br />';
-    echo '<input type="tel" name="sc_ph_number" value="" size="35" />';
-    echo '</p>';
-    echo '<p>';
-    echo 'Email<br />';
-    echo '<input type="email" name="email" value="" size="35" />';
-    echo '</p>';
-    echo '<p>';
-    echo 'Payment<br />';
-    echo ''.form_values($pull_form_atts['form']);
-    echo '</p>';
-    echo '<p><input type="submit" name="cf-submitted" value="Send"></p>';
+    $stripe_key = esc_attr(get_option("stripe_pub_key"));
 
-    echo '</form>';
+    if(isset($_POST['stripeToken']) && !empty($_POST['stripeToken']) && $form_errors == '')
+    {
+
+        \Stripe\Stripe::setApiKey(esc_attr(get_option("stripe_sec_key")));
+
+        // Get the credit card details submitted by the form
+        $token = $_POST['stripeToken'];
+
+        $price = '';
+
+        if($_POST['item_type'] == 'spanish_lessons')
+        {
+            $price = esc_attr( get_option('spanish_lesson_price') );
+        }
+        elseif($_POST['item_type'] == 'dance_lessons')
+        {
+            $price = esc_attr( get_option('dance_lesson_price') );
+        }
+        elseif($_POST['item_type'] == 'membership')
+        {
+            $price = esc_attr( get_option('membership_price') );
+        }
+        else
+        {
+            echo '<div style="color:red"><p>No matching item found.</p></div>';
+            exit();
+        }
+
+        $price_replaced = str_replace(array('.', ','), '' , $price);
+
+        try {
+            
+            
+            $charge = \Stripe\Charge::create(array(
+                "amount" => $price_replaced, // amount in cents, again
+                "currency" => "cad",
+                "source" => $token,
+                "description" => "Example charge"
+            ));
+
+            if($charge['status'] == 'succeeded')
+            {
+                $wpdb->query( $wpdb->prepare( 
+                    "
+                        INSERT INTO $table_name
+                        ( time, name, address, postal_code, ph_number, email, program, amount )
+                        VALUES ( %s, %s, %s, %s, %s, %s, %s, %s )
+                    ",
+                    current_time( 'mysql' ),
+                    $_POST['sc_name'],
+                    $_POST['sc_mailing_address'],
+                    $_POST['sc_postal_code'],
+                    $_POST['sc_ph_number'],
+                    $_POST['email'],
+                    $_POST['item_type'],
+                    $price
+                ) );
+                echo '<div style="color:green">Payment Received!</div>';
+                if($_POST['item_type'] == 'membership')
+                {
+                    $random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
+                    wp_create_user( $_POST['sc_username'], $random_password, $_POST['email'] );
+                    echo '<div style="color:green">Your user account has been made</div>';
+                }
+            }
+        } catch (\Stripe\Error\Card $e) {
+            $form_errors_display .= '<div style="color:red"><p>Error in Stripe Payment: '.$e->getMessage().'</p></div>';
+        }
+    }
+    $membership_username = '';
+    if($pull_form_atts['form'] == '3')
+    {
+        $membership_username .= '<p>'.
+        'Desired Username<br />'.
+        '<input type="text" name="sc_username" value="" size="35" />'.
+        '</p>';
+    }
+
+    $page_text = $form_errors_display.
+	'<form action="'.str_replace('?paypal=checkout','',$_SERVER['REQUEST_URI']).'?paypal=checkout" method="post" id="paypal-payment-form">'.
+    '<span class="payment-errors"></span>'.
+	'<p>'.
+    'Name<br />'.
+    '<input type="text" id="sc_name" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '</p>'.
+    $membership_username .
+    '<p>'.
+    'Mailing Address<br />'.
+    '<input type="text" name="sc_mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '</p>'.
+    '<p>'.
+    'Postal Code<br />'.
+    '<input type="text" name="sc_postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '</p>'.
+    '<p>'.
+    'Phone Number<br />'.
+    '<input type="tel" name="sc_ph_number" value="" size="35" />'.
+    '</p>'.
+    '<p>'.
+    'Email<br />'.
+    '<input type="email" name="email" value="" size="35" />'.
+    '</p>'.
+    '<p>'.
+    'Payment<br />'.
+    ''.form_values($pull_form_atts['form']).
+    '<input type="radio" name="paymentType" id="payPayPal" checked="checked">Paypal</input>'.
+    '<input type="radio" name="paymentType" id="payStripe">Stripe</input>'.
+    '</p>'.
+    '<div id="stripe-details" style="display:none">
+          <div class="form-row">
+            <label>
+              <span>Card Number</span>
+              <input type="text" size="20" data-stripe="number">
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Expiration (MM/YY)</span>
+              <input type="text" size="2" data-stripe="exp_month">
+            </label>
+            <span> / </span>
+            <input type="text" size="2" data-stripe="exp_year">
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>CVC</span>
+              <input type="text" size="4" data-stripe="cvc">
+            </label>
+          </div>
+          </div>'.
+    '<p><input type="submit" class="submit" name="cf-submitted" value="Send"></p>'.
+
+    '</form>'.
+
+    '<script type="text/javascript" src="https://js.stripe.com/v2/"></script>'.
+    '<script type="text/javascript">
+            Stripe.setPublishableKey("'.$stripe_key.'");
+            jQuery(function($) {
+              var $paypal_submit_value = $("#paypal-payment-form").attr("action");
+
+              $("#payPayPal").click(function () {
+                    if ($(this).is(":checked")) {
+                        $("#payment-form").attr("action", $paypal_submit_value);
+                        $("#payment-form").attr("id", "paypal-payment-form");
+                        $("#stripe-details").hide();
+                    }
+                });
+
+                $("#payStripe").click(function () {
+                    if ($(this).is(":checked")) {
+                        $("#paypal-payment-form").attr("action", "");
+                        $("#paypal-payment-form").attr("id", "payment-form");
+                        $("#stripe-details").show();
+
+                        $("#payment-form").submit(function(event) {
+                            var $form = $("#payment-form");
+                            // Disable the submit button to prevent repeated clicks:
+                            $form.find(".submit").prop("disabled", true);
+
+                            // Request a token from Stripe:
+                            Stripe.card.createToken($form, stripeResponseHandler);
+
+                            // Prevent the form from being submitted:
+                            return false;
+                          });
+                    }
+                });
+
+                function stripeResponseHandler(status, response) {
+                  // Grab the form:
+                  var $form = $("#payment-form");
+
+                  if (response.error) { // Problem!
+
+                    // Show the errors on the form:
+                    $form.find(".payment-errors").text(response.error.message);
+                    $form.find(".submit").prop("disabled", false); // Re-enable submission
+
+                  } else { // Token was created!
+
+                    // Get the token ID:
+                    var token = response.id;
+
+                    // Insert the token ID into the form so it gets submitted to the server:
+                    $form.append($("' . "<input type='hidden' name='stripeToken'>" . '").val(token));
+
+                    // Submit the form:
+                    $form.get(0).submit();
+                  }
+                };
+            });
+          </script>';
+
+          return $page_text;
 }
 
 function form_values($form_number)
@@ -105,45 +300,14 @@ function form_values($form_number)
     switch($form_number)
     {
         case '1':
-            echo '<div><p>$'.esc_attr( get_option('spanish_lesson_price') ).'</p></div>'.
-                '<input type="hidden" name="cmd" value="_s-xclick">
-                <input type="hidden" name="hosted_button_id" value="LXZYPZRGEZM26">
-                <input type="image" src="https://www.sandbox.paypal.com/en_US/i/btn/btn_buynowCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-                <img alt="" border="0" src="https://www.sandbox.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">';
+            return '<div><p>$'.esc_attr( get_option('spanish_lesson_price') ).'</p></div><input id="item_type" name="item_type" value="spanish_lessons" type="hidden"></input>';
             break;
         case '2':
-            echo "<div><p>$9.99</p></div>";
+            return '<div><p>$'.esc_attr( get_option('dance_lesson_price') ).'</p></div><input id="item_type" name="item_type" value="dance_lessons" type="hidden"></input>';
             break;
         case '3':
-            echo "<div><p>$39.99</p></div>";
+            return '<div><p>$'.esc_attr( get_option('membership_price') ).'</p></div><input id="item_type" name="item_type" value="membership" type="hidden"></input>';
             break;
-    }
-}
-
-function deliver_mail() {
-
-    // if the submit button is clicked, send the email
-    if ( isset( $_POST['sc-submitted'] ) ) {
-
-        // sanitize form values
-        $name    = sanitize_text_field( $_POST["sc-name"] );
-        $email   = sanitize_email( $_POST["sc-email"] );
-
-        // get the blog administrator's email address
-        $to = get_option( 'admin_email' );
-        $subject = "Hello";
-        $message= "Test";
-
-        $headers = "From: $name <$email>" . "\r\n";
-
-        // If email has been process for sending, display a success message
-        if ( wp_mail( $to, $subject, $message, $headers ) ) {
-            echo '<div>';
-            echo '<p>Thanks for contacting me, expect a response soon.</p>';
-            echo '</div>';
-        } else {
-            echo 'An unexpected error occurred';
-        }
     }
 }
 
@@ -158,16 +322,22 @@ function deliver_mail() {
  */
 function run_spanish_club_forms() {
 
-    $plugin = new Spanish_Club_Forms();
-    $plugin->run();
+	$plugin = new Spanish_Club_Forms();
+	$plugin->run();
 
-    //Adds form 1 shortcode
-    add_shortcode( 'sc_form', 'spanish_form_general' );
+	//Adds form 1 shortcode
+	add_shortcode( 'sc_form', 'spanish_form_general' );
 
     add_action( 'admin_menu', 'spanish_club_forms_admin_menu' );
+    add_action( 'admin_menu', 'spanish_club_excel_admin_menu' );
 
     //call register settings function
     add_action( 'admin_init', 'spanish_form_plugin_settings' );
+
+    if ( ! class_exists( 'Stripe\Stripe' ) ) 
+    {
+        require_once( plugin_dir_path( __FILE__ ) . 'libraries/stripe-php/init.php' );
+    }
 }
 
 
@@ -176,8 +346,12 @@ function spanish_form_plugin_settings() {
     register_setting( 'spanish-form-settings-group', 'spanish_lesson_price' );
     register_setting( 'spanish-form-settings-group', 'dance_lesson_price' );
     register_setting( 'spanish-form-settings-group', 'membership_price' );
-    register_setting( 'spanish-form-settings-group', 'paypal_api_key' );
-    register_setting( 'spanish-form-settings-group', 'stripe_api_key' );
+    register_setting( 'spanish-form-settings-group', 'stripe_pub_key' );
+    register_setting( 'spanish-form-settings-group', 'stripe_sec_key' );
+    register_setting( 'spanish-form-settings-group', 'paypal_mode' );
+    register_setting( 'spanish-form-settings-group', 'paypal_api_user' );
+    register_setting( 'spanish-form-settings-group', 'paypal_api_pass' );
+    register_setting( 'spanish-form-settings-group', 'paypal_api_sig' );
 }
 
 
@@ -191,8 +365,44 @@ function spanish_club_forms_admin_menu() {
     );
 }
 
+function spanish_club_excel_admin_menu() {
+    add_menu_page(
+        'Spanish Club Excel',
+        'Spanish Club Excel',
+        'manage_options',
+        'spanish-club-excel',
+        'excel_options_page'
+    );
+}
+
 function wp_options_page() {
     include 'admin/partials/spanish-club-forms-admin-display.php';
+}
+
+function excel_options_page() {
+    echo '<a href="writeExcel.xlsx" >Download</a>';
+}
+
+add_action('init', 'myStartSession', 1);
+
+function myStartSession() {
+    if(!session_id()) {
+        session_start();
+    }
+}
+
+add_action('template_redirect','yoursite_template_redirect');
+function yoursite_template_redirect() {
+  if ($_SERVER['REQUEST_URI']=='/wp-admin/writeExcel.xlsx') {
+    include 'Excel/writeExcel.php';
+
+    header("Content-type: application/x-msdownload",true,200);
+    header("Content-Disposition: attachment; filename=writeExcel.xlsx");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+    $objWriter->save('php://output');
+    exit();
+  }
 }
 
 
