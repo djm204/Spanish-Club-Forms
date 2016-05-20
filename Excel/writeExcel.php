@@ -27,7 +27,25 @@ global $wpdb;
 $table_name = $wpdb->prefix . "form_payment_record";
 $query_payments = $wpdb->get_results( 'SELECT * FROM ' . $table_name . ' ORDER BY time DESC');
 
-// Add some data
+$spanish_lessons_array = array();
+$dance_lessons_array = array();
+$memberships_array = array();
+
+foreach ( $query_payments as $key=>$data )
+{
+	if($data->program == 'membership')
+	{
+		array_push($membership_array, $data);
+	}
+	if($data->program == 'dance_lessons')
+	{
+		array_push($dance_lessons_array, $data);
+	}
+	if($data->program == 'spanish_lessons')
+	{
+		array_push($spanish_lessons_array, $data);
+	}
+}
 
 $objPHPExcel->setActiveSheetIndex(0);
 $objPHPExcel->getActiveSheet()->SetCellValue('A1', 'Name');
@@ -38,7 +56,18 @@ $objPHPExcel->getActiveSheet()->SetCellValue('E1', 'Email');
 $objPHPExcel->getActiveSheet()->SetCellValue('F1', 'Program');
 $objPHPExcel->getActiveSheet()->SetCellValue('G1', 'Amount');
 $objPHPExcel->getActiveSheet()->SetCellValue('H1', 'Date');
+
+$objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
+$objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
+$objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(12);
+$objPHPExcel->getActiveSheet()->getColumnDimension('D')->setWidth(16);
+$objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(22);
+$objPHPExcel->getActiveSheet()->getColumnDimension('F')->setWidth(15);
+$objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(9);
+$objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(25);
 //time, name, address, postal_code, ph_number, email, program, amount
+
+
 foreach ( $query_payments as $key=>$data )
 {
     $objPHPExcel->getActiveSheet()->setCellValue('A' . ($key + 2), $data->name)
@@ -54,7 +83,7 @@ foreach ( $query_payments as $key=>$data )
 
 // Rename sheet
 
-$objPHPExcel->getActiveSheet()->setTitle('Simple');
+$objPHPExcel->getActiveSheet()->setTitle('Payments');
 
         
 // Save Excel 2007 file

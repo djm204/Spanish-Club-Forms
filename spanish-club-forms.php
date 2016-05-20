@@ -397,7 +397,7 @@ function yoursite_template_redirect() {
     include 'Excel/writeExcel.php';
 
     header("Content-type: application/x-msdownload",true,200);
-    header("Content-Disposition: attachment; filename=writeExcel.xlsx");
+    header("Content-Disposition: attachment; filename=SpanishClubPayments.xlsx");
     header("Pragma: no-cache");
     header("Expires: 0");
     $objWriter->save('php://output');
