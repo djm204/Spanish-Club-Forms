@@ -27,7 +27,7 @@
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 
 /**
@@ -35,8 +35,8 @@ if ( ! defined( 'WPINC' ) ) {
  * This action is documented in includes/class-spanish-club-forms-activator.php
  */
 function activate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
-	Spanish_Club_Forms_Activator::activate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
+    Spanish_Club_Forms_Activator::activate();
 }
 
 /**
@@ -44,8 +44,8 @@ function activate_spanish_club_forms() {
  * This action is documented in includes/class-spanish-club-forms-deactivator.php
  */
 function deactivate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
-	Spanish_Club_Forms_Deactivator::deactivate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
+    Spanish_Club_Forms_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_spanish_club_forms' );
@@ -171,33 +171,32 @@ error_reporting(E_ALL);
     {
         $membership_username .= '<p>'.
         'Desired Username<br />'.
-        '<input type="text" name="sc_username" value="" size="35" />'.
+        '<input type="text" name="sc_username" value="" size="35" required/>'.
         '</p>';
     }
 
     $page_text = $form_errors_display.
-	'<form action="'.str_replace('?paypal=checkout','',$_SERVER['REQUEST_URI']).'?paypal=checkout" method="post" id="paypal-payment-form">'.
-    '<span class="payment-errors"></span>'.
-	'<p>'.
+    '<form action="'.str_replace('?paypal=checkout','',$_SERVER['REQUEST_URI']).'?paypal=checkout" method="post" id="paypal-payment-form">'.
+    '<p>'.
     'Name<br />'.
-    '<input type="text" id="sc_name" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '<input type="text" id="sc_name" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" required/>'.
     '</p>'.
     $membership_username .
     '<p>'.
     'Mailing Address<br />'.
-    '<input type="text" name="sc_mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '<input type="text" name="sc_mailing_address" pattern="[a-zA-Z0-9 ]+" value="" size="35" required/>'.
     '</p>'.
     '<p>'.
     'Postal Code<br />'.
-    '<input type="text" name="sc_postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" />'.
+    '<input type="text" name="sc_postal_code" pattern="[a-zA-Z0-9 ]+" value="" size="35" required/>'.
     '</p>'.
     '<p>'.
     'Phone Number<br />'.
-    '<input type="tel" name="sc_ph_number" value="" size="35" />'.
+    '<input type="tel" name="sc_ph_number" value="" size="35" required/>'.
     '</p>'.
     '<p>'.
     'Email<br />'.
-    '<input type="email" name="email" value="" size="35" />'.
+    '<input type="email" name="email" value="" size="35" required/>'.
     '</p>'.
     '<p>'.
     'Payment<br />'.
@@ -229,6 +228,7 @@ error_reporting(E_ALL);
             </label>
           </div>
           </div>'.
+          '<span class="payment-errors" style="color:red"></span>'.
     '<p><input type="submit" class="submit" name="cf-submitted" value="Send"></p>'.
 
     '</form>'.
@@ -322,11 +322,11 @@ function form_values($form_number)
  */
 function run_spanish_club_forms() {
 
-	$plugin = new Spanish_Club_Forms();
-	$plugin->run();
+    $plugin = new Spanish_Club_Forms();
+    $plugin->run();
 
-	//Adds form 1 shortcode
-	add_shortcode( 'sc_form', 'spanish_form_general' );
+    //Adds form 1 shortcode
+    add_shortcode( 'sc_form', 'spanish_form_general' );
 
     add_action( 'admin_menu', 'spanish_club_forms_admin_menu' );
     add_action( 'admin_menu', 'spanish_club_excel_admin_menu' );
