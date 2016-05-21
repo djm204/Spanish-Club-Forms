@@ -35,7 +35,7 @@ foreach ( $query_payments as $key=>$data )
 {
 	if($data->program == 'membership')
 	{
-		array_push($membership_array, $data);
+		array_push($memberships_array, $data);
 	}
 	if($data->program == 'dance_lessons')
 	{
@@ -67,7 +67,7 @@ $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(9);
 $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(25);
 //time, name, address, postal_code, ph_number, email, program, amount
 
-
+/*
 foreach ( $query_payments as $key=>$data )
 {
     $objPHPExcel->getActiveSheet()->setCellValue('A' . ($key + 2), $data->name)
@@ -79,6 +79,58 @@ foreach ( $query_payments as $key=>$data )
                                   ->setCellValue('G' . ($key + 2), $data->amount)
                                   ->setCellValue('H' . ($key + 2), $data->time);
 
+}
+*/
+
+$array_start = 2;
+$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, 'Spanish Lessons');
+$objPHPExcel->getActiveSheet()->getStyle('A' . $array_start)->getFont()->setSize(18);
+
+foreach ( $spanish_lessons_array as $data )
+{
+	$array_start ++;
+	$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, $data->name)
+                                  ->setCellValue('B' . $array_start, $data->address)
+                                  ->setCellValue('C' . $array_start, $data->postal_code)
+                                  ->setCellValue('D' . $array_start, $data->ph_number)
+                                  ->setCellValue('E' . $array_start, $data->email)
+                                  ->setCellValue('F' . $array_start, $data->program)
+                                  ->setCellValue('G' . $array_start, $data->amount)
+                                  ->setCellValue('H' . $array_start, $data->time);
+}
+
+$array_start ++;
+$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, 'Dance Lessons');
+$objPHPExcel->getActiveSheet()->getStyle('A' . $array_start)->getFont()->setSize(18);
+
+foreach ( $dance_lessons_array as $data )
+{
+	$array_start ++;
+	$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, $data->name)
+                                  ->setCellValue('B' . $array_start, $data->address)
+                                  ->setCellValue('C' . $array_start, $data->postal_code)
+                                  ->setCellValue('D' . $array_start, $data->ph_number)
+                                  ->setCellValue('E' . $array_start, $data->email)
+                                  ->setCellValue('F' . $array_start, $data->program)
+                                  ->setCellValue('G' . $array_start, $data->amount)
+                                  ->setCellValue('H' . $array_start, $data->time);
+}
+
+$array_start ++;
+$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, 'Memberships');
+$objPHPExcel->getActiveSheet()->getStyle('A' . $array_start)->getFont()->setSize(18);
+
+foreach ( $memberships_array as $data )
+{
+	$array_start ++;
+	$objPHPExcel->getActiveSheet()->setCellValue('A' . $array_start, $data->name)
+                                  ->setCellValue('B' . $array_start, $data->address)
+                                  ->setCellValue('C' . $array_start, $data->postal_code)
+                                  ->setCellValue('D' . $array_start, $data->ph_number)
+                                  ->setCellValue('E' . $array_start, $data->email)
+                                  ->setCellValue('F' . $array_start, $data->program)
+                                  ->setCellValue('G' . $array_start, $data->amount)
+                                  ->setCellValue('H' . $array_start, $data->time);
 }
 
 // Rename sheet
