@@ -46,6 +46,8 @@ class Spanish_Club_Forms_Activator {
 		  email varchar(45) NOT NULL,
 		  program varchar(40) NOT NULL,
 		  amount varchar(12) NOT NULL,
+		  payment_type varchar(22) NOT NULL,
+		  status varchar(22) NOT NULL,
 		  UNIQUE KEY id (id)
 		) $charset_collate;";
 

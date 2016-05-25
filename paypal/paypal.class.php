@@ -182,8 +182,8 @@
 						$wpdb->query( $wpdb->prepare( 
 		                    "
 		                        INSERT INTO $table_name
-		                        ( time, name, address, postal_code, ph_number, email, program, amount )
-		                        VALUES ( %s, %s, %s, %s, %s, %s, %s, %s )
+		                        ( time, name, address, postal_code, ph_number, email, program, amount, payment_type, status )
+		                        VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )
 		                    ",
 		                    current_time( 'mysql' ),
 						    $_SESSION['sc_name'],
@@ -192,7 +192,9 @@
 				            $_SESSION['sc_ph_number'],
 				            $_SESSION['email'],
 				            $_SESSION['item_type'],
-				            $_SESSION['price']
+				            $_SESSION['price'],
+				            'Paypal',
+				            'Paid'
 		                ) );
 
 						echo '<div style="color:green">Payment Received!</div>';
@@ -200,14 +202,45 @@
 						if($_SESSION['item_type'] == 'membership')
 						{
 							$random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
-							wp_create_user( $_SESSION['username'], $random_password, $_SESSION['email'] );
-							echo '<div style="color:green">Your user account has been made</div>';
+		                    wp_create_user( $_SESSION['username'], $random_password, $_SESSION['email'] );
+		                    echo '<div style="color:green">Your user account has been made. Username and password has been sent to your e-mail.</div>';
+		                    $email_message = 'Thank you for joining, ' . $_SESSION['sc_name'] . '. Your user name is ' . $_SESSION['username'] . ' and your password is ' . $random_password . ' and it is suggested once you log in to change your password.';
+		                    wp_mail( $_SESSION['email'], 'Thank you for joining', $email_message);
 						}
 					}
 					elseif('Pending' == $httpParsedResponseAr["PAYMENTINFO_0_PAYMENTSTATUS"]){
-						
+						global $wpdb;
+    					$table_name = $wpdb->prefix . "form_payment_record";
+						$wpdb->query( $wpdb->prepare( 
+		                    "
+		                        INSERT INTO $table_name
+		                        ( time, name, address, postal_code, ph_number, email, program, amount, payment_type, status )
+		                        VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )
+		                    ",
+		                    current_time( 'mysql' ),
+						    $_SESSION['sc_name'],
+				    		$_SESSION['sc_mailing_address'],
+				    		$_SESSION['sc_postal_code'],
+				            $_SESSION['sc_ph_number'],
+				            $_SESSION['email'],
+				            $_SESSION['item_type'],
+				            $_SESSION['price'],
+				            'Paypal',
+				            'Pending'
+		                ) );
+
+						$random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
+						$userdata = array(
+			                        'user_login'  =>  $_SESSION['username'],
+			                        'user_pass'   =>  $random_password,
+			                        'user_email'  =>  $_SESSION['email'],
+			                        'role' => ''
+			                    );
+		                wp_insert_user($userdata);
+		                $email_message = 'Thank you for joining, ' . $_SESSION['sc_name'] . '. Your user name is ' . $_SESSION['username'] . ' and your password is ' . $random_password . ' and it is suggested once you log in to change your password.';
+		                wp_mail( $_SESSION['email'], 'Thank you for joining', $email_message);
 						echo '<div style="color:red">Transaction Complete, but payment may still be pending! '.
-						'If that\'s the case, You can manually authorize this payment in your <a target="_new" href="http://www.paypal.com">Paypal Account</a></div>';
+						'If that\'s the case, You can manually authorize this payment in your <a target="_new" href="http://www.paypal.com">Paypal Account.</a> For now your account has been made, but it is set to inactive. Please keep your account details until payment is resolved.</div>';
 					}
 					
 					$this->GetTransactionDetails();
