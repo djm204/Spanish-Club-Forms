@@ -65,6 +65,7 @@ function spanish_form_general( $atts ){
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
     include 'form-validations.php';
+    include 'email.php';
     $form_errors = 'Null';
     $form_errors_display = '';
     $stripe_status = '';
@@ -119,8 +120,7 @@ error_reporting(E_ALL);
                     );
         wp_insert_user($userdata);
         $stripe_status .= 'Your user account has been made. Username and password has been sent to your e-mail. However, your account is inactive until you pay in person.';
-        $email_message = 'Thank you for joining, ' . $_POST['sc_name'] . '. Your user name is ' . $_POST['sc_username'] . ' and your password is ' . $random_password . ' and it is suggested once you log in to change your password.';
-        wp_mail( $_POST['email'], 'Thank you for joining', $email_message);
+        sendMail($_POST['email'], $_POST['sc_name'], $_POST['sc_username'], $random_password);
 
     }
 
@@ -209,8 +209,7 @@ error_reporting(E_ALL);
                     $random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
                     wp_create_user( $_POST['sc_username'], $random_password, $_POST['email'] );
                     $stripe_status .= 'Your user account has been made. Username and password has been sent to your e-mail.';
-                    $email_message = 'Thank you for joining, ' . $_POST['sc_name'] . '. Your user name is ' . $_POST['sc_username'] . ' and your password is ' . $random_password . ' and it is suggested once you log in to change your password.';
-                    wp_mail( $_POST['email'], 'Thank you for joining', $email_message);
+                    sendMail($_POST['email'], $_POST['sc_name'], $_POST['sc_username'], $random_password);
                 }
             }
         } catch (\Stripe\Error\Card $e) {
