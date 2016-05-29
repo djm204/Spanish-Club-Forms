@@ -27,7 +27,7 @@
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 
 /**
@@ -35,8 +35,8 @@ if ( ! defined( 'WPINC' ) ) {
  * This action is documented in includes/class-spanish-club-forms-activator.php
  */
 function activate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
-	Spanish_Club_Forms_Activator::activate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-activator.php';
+    Spanish_Club_Forms_Activator::activate();
 }
 
 /**
@@ -44,8 +44,8 @@ function activate_spanish_club_forms() {
  * This action is documented in includes/class-spanish-club-forms-deactivator.php
  */
 function deactivate_spanish_club_forms() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
-	Spanish_Club_Forms_Deactivator::deactivate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-spanish-club-forms-deactivator.php';
+    Spanish_Club_Forms_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_spanish_club_forms' );
@@ -83,7 +83,15 @@ error_reporting(E_ALL);
     {
         $price = '';
 
-        if($_POST['item_type'] == 'membership')
+        if($_POST['item_type'] == 'spanish_lessons')
+        {
+            $price = esc_attr( get_option('spanish_lesson_price') );
+        }
+        elseif($_POST['item_type'] == 'dance_lessons')
+        {
+            $price = esc_attr( get_option('dance_lesson_price') );
+        }
+        elseif($_POST['item_type'] == 'membership')
         {
             $price = esc_attr( get_option('membership_price') );
         }
@@ -110,17 +118,20 @@ error_reporting(E_ALL);
             'In Person',
             'Pending'
         ) );
-
-        $random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
-        $userdata = array(
-                        'user_login'  =>  $_POST['sc_username'],
-                        'user_pass'   =>  $random_password,
-                        'user_email'  =>  $_POST['email'],
-                        'role' => ''
-                    );
-        wp_insert_user($userdata);
-        $stripe_status .= 'Your user account has been made. Username and password has been sent to your e-mail. However, your account is inactive until you pay in person.';
-        sendMail($_POST['email'], $_POST['sc_name'], $_POST['sc_username'], $random_password);
+        $stripe_status .= 'Thank you for your interest! Please be sure to pay in person.<br />';
+        if($_POST['item_type'] == 'membership')
+        {
+            $random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
+            $userdata = array(
+                            'user_login'  =>  $_POST['sc_username'],
+                            'user_pass'   =>  $random_password,
+                            'user_email'  =>  $_POST['email'],
+                            'role' => ''
+                        );
+            wp_insert_user($userdata);
+            $stripe_status .= 'Your user account has been made. Username and password has been sent to your e-mail. However, your account is inactive until you pay in person.';
+            sendMail($_POST['email'], $_POST['sc_name'], $_POST['sc_username'], $random_password);
+        }
 
     }
 
@@ -226,8 +237,8 @@ error_reporting(E_ALL);
     }
 
     $page_text = $form_errors_display.
-	'<form action="'.str_replace('?paypal=checkout','',$_SERVER['REQUEST_URI']).'?paypal=checkout" method="post" id="paypal-payment-form">'.
-	'<p>'.
+    '<form action="'.str_replace('?paypal=checkout','',$_SERVER['REQUEST_URI']).'?paypal=checkout" method="post" id="paypal-payment-form">'.
+    '<p>'.
     'Name<br />'.
     '<input type="text" id="sc_name" name="sc_name" pattern="[a-zA-Z0-9 ]+" value="" size="35" required/>'.
     '</p>'.
@@ -251,6 +262,7 @@ error_reporting(E_ALL);
     '<p>'.
     'Payment<br />'.
     ''.form_values($pull_form_atts['form']).
+    '<input type="radio" name="paymentType" id="payInPerson" value="payInPerson"> Pay In Person</input><br />'.
     '<input type="radio" name="paymentType" id="payPayPal" checked="checked"> Paypal</input><br />'.
     '<input type="radio" name="paymentType" id="payStripe"> Stripe</input><br />'.
     '</p>'.
@@ -370,7 +382,7 @@ function form_values($form_number)
             return '<div><p>$'.esc_attr( get_option('dance_lesson_price') ).'</p></div><input id="item_type" name="item_type" value="dance_lessons" type="hidden"></input>';
             break;
         case '3':
-            return '<div><p>$'.esc_attr( get_option('membership_price') ).'</p></div><input id="item_type" name="item_type" value="membership" type="hidden"></input><input type="radio" name="paymentType" id="payInPerson" value="payInPerson"> Pay In Person</input><br />';
+            return '<div><p>$'.esc_attr( get_option('membership_price') ).'</p></div><input id="item_type" name="item_type" value="membership" type="hidden"></input>';
             break;
     }
 }
@@ -386,11 +398,11 @@ function form_values($form_number)
  */
 function run_spanish_club_forms() {
 
-	$plugin = new Spanish_Club_Forms();
-	$plugin->run();
+    $plugin = new Spanish_Club_Forms();
+    $plugin->run();
 
-	//Adds form 1 shortcode
-	add_shortcode( 'sc_form', 'spanish_form_general' );
+    //Adds form 1 shortcode
+    add_shortcode( 'sc_form', 'spanish_form_general' );
 
     add_action( 'admin_menu', 'spanish_club_forms_admin_menu' );
     add_action( 'admin_menu', 'spanish_club_excel_admin_menu' );
